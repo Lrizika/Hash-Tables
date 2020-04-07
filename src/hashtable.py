@@ -27,12 +27,12 @@ class LinkedPair:
 		else:
 			self.next.add_item(key, value)
 
-	def remove_key(self, key):
+	def remove_key_return(self, key):
 		if self.key == key:
 			self = self.next
 			return self
 		elif self.next is not None:
-			self.next = self.next.remove_key(key)
+			self.next = self.next.remove_key_return(key)
 			return self
 		else:
 			raise KeyError(key)
@@ -115,7 +115,7 @@ class HashTable:
 	def __delitem__(self, key):
 		hashed = self._hash_mod(key)
 		if self.storage[hashed] is not None:
-			self.storage[hashed] = self.storage[hashed].remove_key(key)
+			self.storage[hashed] = self.storage[hashed].remove_key_return(key)
 		else:
 			raise KeyError(key)
 
