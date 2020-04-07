@@ -4,6 +4,8 @@
 # Linked List hash table key/value pair
 # '''
 
+from collections import namedtuple
+
 
 class LinkedPair:
 	def __init__(self, key, value):
@@ -11,15 +13,58 @@ class LinkedPair:
 		self.value = value
 		self.next = None
 
+	def set_pair(self, key, value):
+		if self.key == key:
+			self.value = value
+		elif self.next is not None:
+			self.next.set_pair(key, value)
+		else:
+			self.add_item(key, value)
+
+	def add_item(self, key, value):
+		if self.next is None:
+			self.next = LinkedPair(key, value)
+		else:
+			self.next.add_item(key, value)
+
+	def remove_key(self, key):
+		if self.key == key:
+			self = self.next
+			return self
+		elif self.next is not None:
+			self.next = self.next.remove_key(key)
+			return self
+		else:
+			raise KeyError(key)
+
+	def get_pair_by_key(self, key):
+		if self.key == key:
+			return self
+		else:
+			return self.next.get_pair_by_key(key)
+
+	def __iter__(self):
+		cur = self
+		while cur is not None:
+			yield cur.key, cur.value
+			cur = cur.next
+
+	def __str__(self):
+		return '{' + ', '.join([f'{k}: {v}' for k, v in self]) + '}'
+
+	def __repr__(self):
+		return f'<{self.__class__.__name__}: {str(self)}>'
+
 
 class HashTable:
+
 	'''
 	A hash table that with `capacity` buckets
 	that accepts string keys
 	'''
 	def __init__(self, capacity):
 		self.capacity = capacity  # Number of buckets in the hash table
-		self.storage = [(None, None)] * capacity
+		self.storage = [None] * capacity
 
 	def _hash(self, key):
 		'''
@@ -45,10 +90,11 @@ class HashTable:
 		return self._hash(key) % self.capacity
 
 	def __setitem__(self, key, value):
-		bucket = self._hash_mod(key)
-		if self.storage[bucket][0] not in (key, None):
-			raise KeyError(f'Collision: Key {self.storage[bucket][0]} and {key} both have bucket {bucket}.')
-		self.storage[bucket] = (key, value)
+		hashed = self._hash_mod(key)
+		if self.storage[hashed] is None:
+			self.storage[hashed] = LinkedPair(key, value)
+		else:
+			self.storage[hashed].set_pair(key, value)
 
 	def insert(self, key, value):
 		'''
@@ -67,9 +113,9 @@ class HashTable:
 			print(e)
 
 	def __delitem__(self, key):
-		bucket = self._hash_mod(key)
-		if self.storage[bucket][0] == key:
-			self.storage[bucket] = (None, None)
+		hashed = self._hash_mod(key)
+		if self.storage[hashed] is not None:
+			self.storage[hashed] = self.storage[hashed].remove_key(key)
 		else:
 			raise KeyError(key)
 
@@ -87,9 +133,9 @@ class HashTable:
 			print(e)
 
 	def __getitem__(self, key):
-		bucket = self._hash_mod(key)
-		if self.storage[bucket][0] == key:
-			return self.storage[bucket][1]
+		hashed = self._hash_mod(key)
+		if self.storage[hashed] is not None:
+			return self.storage[hashed].get_pair_by_key(key).value
 		else:
 			raise KeyError(key)
 
@@ -116,9 +162,11 @@ class HashTable:
 		if new_capacity is None:
 			new_capacity = self.capacity * 2
 		old_storage = self.storage[:]
-		self.storage = [(None, None)] * new_capacity
-		for key, value in old_storage:
-			self[key] = value
+		self.storage = [None] * new_capacity
+		for pair in old_storage:
+			if pair is not None:
+				for key, value in pair:
+					self[key] = value
 
 
 if __name__ == "__main__":
